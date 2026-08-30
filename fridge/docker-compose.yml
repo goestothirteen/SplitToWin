@@ -1,0 +1,26 @@
+# Caddy used to live here. It is the shared front door for every app on this
+# box, so it now has its own project in ~/edge — which means redeploying the
+# fridge no longer restarts the proxy and interrupts everything else.
+# The fridge joins the `edge` network to stay reachable.
+
+services:
+  fridge:
+    build: .
+    restart: unless-stopped
+    # no host port: only Caddy reaches it, over the shared edge network
+    expose:
+      - "8025"
+    networks:
+      - edge
+    volumes:
+      - fridge-data:/data
+      # real content config (password, letter, preserves…) lives OUTSIDE the image
+      - ./config.json:/app/server/config.json:ro
+
+networks:
+  edge:
+    name: edge
+    external: true
+
+volumes:
+  fridge-data:

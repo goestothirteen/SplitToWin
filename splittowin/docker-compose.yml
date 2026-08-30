@@ -1,0 +1,39 @@
+# SplitToWin.
+#
+# Only the API runs as a container. The frontend is static files built into
+# ./dist, which the shared Caddy serves directly off disk — no Node process
+# in production, nothing to keep alive, and a UI deploy is just new files.
+
+services:
+  api:
+    build: ./api
+    # Fixed name because Caddy addresses it by hostname on the shared network.
+    container_name: splittowin-api
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8000"
+    networks:
+      - edge
+    healthcheck:
+      # Cheap and model-free by design — it must answer while a parse is
+      # in flight, which the old single-worker setup could not.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    deploy:
+      resources:
+        limits:
+          # 2GB box shared with fridge and fpl-bot. A runaway here should hit
+          # its own ceiling rather than let the OOM killer pick a victim.
+          memory: 512M
+
+networks:
+  edge:
+    name: edge
+    external: true

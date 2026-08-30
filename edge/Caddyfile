@@ -1,0 +1,64 @@
+# The server's front door. Every site on this box is routed from here.
+#
+# Caddy obtains and renews Let's Encrypt certificates itself; the certs live
+# in the caddy-data volume. Do not delete that volume — every restart would
+# then re-issue against Let's Encrypt's rate limit.
+{
+	email weeingyau@gmail.com
+}
+
+fridgeoflove.duckdns.org {
+	encode zstd gzip
+
+	header {
+		# she's the only audience — stay out of every index
+		X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+		Referrer-Policy "no-referrer"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	reverse_proxy fridge:8025
+}
+
+split2win.duckdns.org {
+	encode zstd gzip
+
+	header {
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	# The API and the UI share one hostname, which is what removes CORS from
+	# the picture entirely: the browser never makes a cross-origin request.
+	handle /api/* {
+		# Receipt photos are capped server-side too; this rejects an
+		# oversized upload at the edge before it reaches Python.
+		request_body {
+			max_size 15MB
+		}
+		uri strip_prefix /api
+		reverse_proxy splittowin-api:8000 {
+			# A parse can legitimately take ~20s, and retries can push it
+			# further. Well clear of that, and under the gunicorn timeout.
+			transport http {
+				read_timeout 90s
+			}
+		}
+	}
+
+	handle {
+		root * /srv/split2win
+
+		# Vite fingerprints these, so they can be cached hard. index.html
+		# must not be, or a deploy won't be picked up.
+		@immutable path /assets/*
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+		header /index.html Cache-Control "no-cache"
+
+		try_files {path} /index.html
+		file_server
+	}
+}

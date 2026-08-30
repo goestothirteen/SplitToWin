@@ -1,0 +1,42 @@
+# The shared reverse proxy for every app on this box.
+#
+# Caddy used to live inside the fridge project, which meant redeploying the
+# fridge restarted the proxy and briefly took down everything else. It owns
+# the front door, so it gets to be its own thing; apps join the `edge`
+# network to become reachable.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: edge-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data # certificates — losing this re-issues from scratch
+      - caddy-config:/config
+      # Built frontend, served straight off disk. Read-only: the proxy has no
+      # business writing to it.
+      - /home/mark/splittowin/dist:/srv/split2win:ro
+    networks:
+      - edge
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+networks:
+  edge:
+    name: edge
+    external: true
+
+volumes:
+  # Deliberately pointed at the volumes the fridge project already created,
+  # so the existing certificates carry over instead of being re-issued.
+  caddy-data:
+    name: fridge_caddy-data
+    external: true
+  caddy-config:
+    name: fridge_caddy-config
+    external: true
