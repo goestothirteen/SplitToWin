@@ -2,7 +2,7 @@
 #
 # Only the API runs as a container. The frontend is static files built into
 # ./dist, which the shared Caddy serves directly off disk — no Node process
-# in production, nothing to keep alive, and a UI deploy is just new files.
+# in production for the UI, and a UI deploy is just new files.
 
 services:
   api:
@@ -11,10 +11,21 @@ services:
     container_name: splittowin-api
     restart: unless-stopped
     env_file: .env
+    # Matches the axolotl account on the host, whose Claude Code login is
+    # mounted below. Same uid means the CLI can read that login and write a
+    # refreshed token back to it.
+    user: "1001:1001"
     expose:
       - "8000"
     networks:
       - edge
+    volumes:
+      # The Claude Code subscription login, shared with the host's hermes
+      # agent. Mounted read-write because the CLI refreshes its own token.
+      # If it ever goes away the provider reports itself unavailable and the
+      # fallback takes over, rather than every request failing.
+      - /home/axolotl/.claude:/home/appuser/.claude
+      - /home/axolotl/.claude.json:/home/appuser/.claude.json
     healthcheck:
       # Cheap and model-free by design — it must answer while a parse is
       # in flight, which the old single-worker setup could not.
@@ -29,9 +40,10 @@ services:
     deploy:
       resources:
         limits:
-          # 2GB box shared with fridge and fpl-bot. A runaway here should hit
-          # its own ceiling rather than let the OOM killer pick a victim.
-          memory: 512M
+          # Headroom for one Claude Code invocation (a Node process of a few
+          # hundred MB) on top of gunicorn. Concurrency is capped at 1 in the
+          # provider, so this ceiling is per-call, not per-thread.
+          memory: 1200M
 
 networks:
   edge:
