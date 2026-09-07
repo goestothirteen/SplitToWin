@@ -1,7 +1,7 @@
 # Deploy and operate SplitToWin. Run from ~/splittowin.
 SHELL := /bin/bash
 
-.PHONY: help deploy pull build-ui build-api up down restart logs logs-api ps health rollback versions clean
+.PHONY: help deploy pull build-ui build-api up down restart logs logs-api ps health stats rollback versions clean
 
 help:  ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -63,3 +63,6 @@ rollback:  ## roll back to the previous commit of both repos: make rollback
 
 clean:  ## reclaim docker build cache
 	docker builder prune -f
+
+stats:  ## who used the app, one row per person (same as opening /api/stats)
+	@curl -fsS -H 'Accept: application/json' https://split2win.duckdns.org/api/stats | python3 -m json.tool

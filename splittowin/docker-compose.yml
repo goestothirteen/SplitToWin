@@ -26,6 +26,9 @@ services:
       # fallback takes over, rather than every request failing.
       - /home/axolotl/.claude:/home/appuser/.claude
       - /home/axolotl/.claude.json:/home/appuser/.claude.json
+      # Caddy's access log for this site, so /api/stats can answer "who has
+      # used this?". Read-only: the API never writes anywhere.
+      - /home/mark/edge/logs:/var/log/caddy:ro
     healthcheck:
       # Cheap and model-free by design — it must answer while a parse is
       # in flight, which the old single-worker setup could not.

@@ -1,2 +1,5 @@
 .env
 *.bak-*
+# Caddy's access logs land here on the server (edge/docker-compose.yml).
+edge/logs/
+__pycache__/

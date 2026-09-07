@@ -22,6 +22,28 @@ fridgeoflove.duckdns.org {
 }
 
 split2win.duckdns.org {
+	# Access log: who used the app, when, from what device. JSON lines,
+	# rotated by Caddy itself, kept a year, on the host in ~/edge/logs/.
+	# The API mounts that directory read-only and serves it as /api/stats.
+	log {
+		output file /var/log/caddy/split2win.log {
+			roll_size 10MiB
+			roll_keep 12
+			roll_keep_for 8760h
+			# Caddy's default is 0600, and the API container reads this as
+			# uid 1001, not root.
+			mode 0644
+		}
+		# Pay links carry their whole payload in the path (payee's PayNow
+		# number, names, amount), so a raw log of URIs would keep all of
+		# that for a year. Blank the payload; the open still counts.
+		format filter {
+			wrap json
+			fields {
+				request>uri regexp ^/pay/.* /pay/_
+			}
+		}
+	}
 	encode zstd gzip
 
 	header {

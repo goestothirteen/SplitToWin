@@ -79,6 +79,7 @@ API, and verifies the result. `make help` lists everything else.
 | `make deploy` | full deploy: pull, build both, restart, health-check |
 | `make health` | check container health, the API through Caddy, and the frontend |
 | `make logs` | follow API logs |
+| `make stats` | who has used the app, one row per person (JSON of `/api/stats`) |
 | `make versions` | show the deployed commit of each repo |
 | `make rollback` | step both repos back one commit and redeploy |
 | `make clean` | reclaim Docker build cache |
@@ -135,3 +136,25 @@ while a parse is in flight. `docker ps` shows the result.
 `/healthz` returns which providers are actually usable, so a missing key or an
 unavailable provider shows up as `degraded` there rather than as a mystery
 failure at the dinner table.
+
+## Who has used it
+
+**https://split2win.duckdns.org/api/stats** — one row per person who parsed
+a receipt: device, first and last seen, page views, receipts parsed, failed
+parses, average parse time. A browser gets a table; `curl` (or `make stats`)
+gets the JSON.
+
+It is an open URL on purpose. The report is counts and device classes only —
+no addresses — so there is nothing on it worth the friction of a login.
+
+How it works: Caddy writes a JSON access log for this site to
+`~/edge/logs/split2win.log` (rotated by Caddy, kept a year); the API
+container mounts that directory read-only and summarises it on request,
+cached for 30s. The log holds HTTP metadata only — address, time, path, user
+agent. Pay-link URLs would carry a payee's PayNow number and names in the
+path, so the Caddyfile blanks that part before it is written. Names, items
+and assignments never reach the server at all.
+
+Logging config lives in `~/edge/Caddyfile`, so changing it is an edge deploy:
+`cd ~/edge && docker compose up -d --force-recreate caddy`. The mount into the
+API is in `~/splittowin/docker-compose.yml`, picked up by `make up`.

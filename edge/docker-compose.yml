@@ -20,6 +20,9 @@ services:
       # Built frontend, served straight off disk. Read-only: the proxy has no
       # business writing to it.
       - /home/mark/splittowin/dist:/srv/split2win:ro
+      # Access logs, written by the log directive in the Caddyfile. The API
+      # container mounts the same directory read-only to serve /api/stats.
+      - ./logs:/var/log/caddy
     networks:
       - edge
     logging:
