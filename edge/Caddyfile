@@ -84,3 +84,17 @@ split2win.duckdns.org {
 		file_server
 	}
 }
+
+markbrain.duckdns.org {
+	encode zstd gzip
+
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	# Second-brain MCP/REST server — a host process, not a container, so it is
+	# reached via the docker host-gateway. Auth lives in the app (bearer tokens).
+	reverse_proxy host.docker.internal:8787
+}
