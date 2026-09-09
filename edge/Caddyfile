@@ -98,3 +98,19 @@ markbrain.duckdns.org {
 	# reached via the docker host-gateway. Auth lives in the app (bearer tokens).
 	reverse_proxy host.docker.internal:8787
 }
+
+# brainview — read-only web UI for the second brain; host process on 8788 (see personal-agent/brain/ops).
+brainview.duckdns.org {
+	encode zstd gzip
+
+	header {
+		X-Robots-Tag "noindex, nofollow, noarchive"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# Auth lives in the app (signed cookie after a one-time read-token login).
+	reverse_proxy host.docker.internal:8788
+}
