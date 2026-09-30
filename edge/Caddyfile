@@ -114,3 +114,24 @@ brainview.duckdns.org {
 	# Auth lives in the app (signed cookie after a one-time read-token login).
 	reverse_proxy host.docker.internal:8788
 }
+
+# CrewMesh marketing site, preview before it moves to crewmesh.ai. Static files
+# in /home/mark/crewmesh-site (no build step). Kept out of search indexes while
+# it is a preview.
+crewmesh-preview.duckdns.org {
+	encode zstd gzip
+
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# The page is edited in place, so the HTML must never be cached.
+	@page path / /index.html
+	header @page Cache-Control "no-cache"
+
+	root * /srv/crewmesh-site
+	file_server
+}

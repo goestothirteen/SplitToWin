@@ -24,6 +24,9 @@ services:
       # Built frontend, served straight off disk. Read-only: the proxy has no
       # business writing to it.
       - /home/mark/splittowin/dist:/srv/split2win:ro
+      # CrewMesh marketing site preview: plain static files, copied in from
+      # the Cassie Chatbot project's crewmesh-website folder.
+      - /home/mark/crewmesh-site:/srv/crewmesh-site:ro
       # Access logs, written by the log directive in the Caddyfile. The API
       # container mounts the same directory read-only to serve /api/stats.
       - ./logs:/var/log/caddy
