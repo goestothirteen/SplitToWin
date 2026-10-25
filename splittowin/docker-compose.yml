@@ -27,8 +27,14 @@ services:
       - /home/axolotl/.claude:/home/appuser/.claude
       - /home/axolotl/.claude.json:/home/appuser/.claude.json
       # Caddy's access log for this site, so /api/stats can answer "who has
-      # used this?". Read-only: the API never writes anywhere.
+      # used this?". Read-only: the API only ever reads it.
       - /home/mark/edge/logs:/var/log/caddy:ro
+      # The receipt archive: a small copy of each photo, its total, and the
+      # names it was split between, shown on /api/stats. On the host so it
+      # outlives the container. The directory must be owned by uid 1001,
+      # the user the API runs as:
+      #   sudo mkdir -p /home/mark/splittowin/data && sudo chown 1001:1001 /home/mark/splittowin/data
+      - /home/mark/splittowin/data:/app/data
     healthcheck:
       # Cheap and model-free by design — it must answer while a parse is
       # in flight, which the old single-worker setup could not.

@@ -139,21 +139,35 @@ failure at the dinner table.
 
 ## Who has used it
 
-**https://split2win.duckdns.org/api/stats** — one row per person who parsed
-a receipt: device, first and last seen, page views, receipts parsed, failed
-parses, average parse time. A browser gets a table; `curl` (or `make stats`)
-gets the JSON.
+**https://split2win.duckdns.org/api/stats** — one row per receipt uploaded:
+when, which device, how the parse went, how long the phone waited. A browser
+gets a table; `curl` (or `make stats`) gets the JSON.
 
-It is an open URL on purpose. The report is counts and device classes only —
-no addresses — so there is nothing on it worth the friction of a login.
+Each row also shows **who the bill was split between** (the names typed into
+the phone, as they last stood), the receipt's total, and a link to a small
+copy of the photo.
 
-How it works: Caddy writes a JSON access log for this site to
-`~/edge/logs/split2win.log` (rotated by Caddy, kept a year); the API
-container mounts that directory read-only and summarises it on request,
-cached for 30s. The log holds HTTP metadata only — address, time, path, user
-agent. Pay-link URLs would carry a payee's PayNow number and names in the
-path, so the Caddyfile blanks that part before it is written. Names, items
-and assignments never reach the server at all.
+It is an open URL on purpose — a personal app used among friends, where a
+login would be more friction than the page is worth. Bear in mind that means
+the names and receipt photos are visible to anyone who finds the address.
+
+How it works, two sources joined on the upload's job id:
+
+- Caddy writes a JSON access log for this site to `~/edge/logs/split2win.log`
+  (rotated by Caddy, kept a year); the API container mounts that directory
+  read-only. It holds HTTP metadata only — address, time, path, user agent.
+  Pay-link URLs would carry a payee's PayNow number and names in the path,
+  so the Caddyfile blanks that part before it is written.
+- The API keeps a **receipt archive** in `~/splittowin/data` (mounted into
+  the container at `/app/data`, owned by uid 1001): SQLite plus one JPEG per
+  upload, downscaled to 1000px / quality 70, roughly 100 KB each. The phone
+  posts the names to `/api/parse-receipt/<jobId>/people` whenever the list
+  changes. Item assignments and who-owes-what still never reach the server.
+
+Disk is the thing to watch: the box has well under a GB spare, so at ~100 KB
+a receipt the archive is fine for thousands of receipts, not tens of
+thousands. Deleting old files from `data/photos/` is safe; the row simply
+loses its photo link.
 
 Logging config lives in `~/edge/Caddyfile`, so changing it is an edge deploy:
 `cd ~/edge && docker compose up -d --force-recreate caddy`. The mount into the
