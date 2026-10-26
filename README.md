@@ -161,8 +161,9 @@ How it works, two sources joined on the upload's job id:
 - The API keeps a **receipt archive** in `~/splittowin/data` (mounted into
   the container at `/app/data`, owned by uid 1001): SQLite plus one JPEG per
   upload, downscaled to 1000px / quality 70, roughly 100 KB each. The phone
-  posts the names to `/api/parse-receipt/<jobId>/people` whenever the list
-  changes. Item assignments and who-owes-what still never reach the server.
+  posts the names to `/api/parse-receipt/<jobId>/people` when the person
+  taps "Split the bill". Item assignments and who-owes-what still never
+  reach the server.
 
 Disk is the thing to watch: the box has well under a GB spare, so at ~100 KB
 a receipt the archive is fine for thousands of receipts, not tens of
